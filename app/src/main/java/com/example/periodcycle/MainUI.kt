@@ -41,7 +41,7 @@ fun PeriodTrackerApp() {
     // Update progress every minute
     LaunchedEffect(Unit) {
         while (true) {
-            delay(60_000) // Update every minute
+            delay(600_000) // Update every 10 minute
             progress = calculateProgress()
         }
     }

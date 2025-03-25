@@ -73,6 +73,10 @@ dependencies {
     //calender
     implementation ("io.github.boguszpawlowski.composecalendar:composecalendar:1.3.0")
 
+    //gif
+    implementation ("io.coil-kt:coil-compose:2.1.0")
+    implementation ("io.coil-kt:coil-gif:2.1.0")
+
     implementation ("androidx.compose.ui:ui:1.4.3")
     implementation ("androidx.compose.material:material:1.4.3")
     implementation ("androidx.compose.ui:ui-tooling-preview:1.4.3")
