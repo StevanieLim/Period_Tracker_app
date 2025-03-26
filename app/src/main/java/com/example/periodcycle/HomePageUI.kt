@@ -66,10 +66,6 @@ fun SunAnimation() {
             }.also{delay(1000)}
         }
     }
-
-
-
-
     // UI layout
     Box(
         modifier = Modifier
@@ -87,3 +83,5 @@ fun SunAnimation() {
         )
     }
 }
+
+
