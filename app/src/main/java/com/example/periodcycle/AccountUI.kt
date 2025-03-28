@@ -59,9 +59,14 @@ fun AccountUI() {
     var water by remember { mutableIntStateOf(0) }
     var showDialogAcc by remember { mutableStateOf(false) }
     var showDialogMoods by remember { mutableStateOf(false) }
+    var showDialogPeriod by remember { mutableStateOf(false) }
+    var showDialogRemain by remember { mutableStateOf(false) }
     var selectedWeight by remember { mutableIntStateOf(60) }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedMood by remember { mutableStateOf("Happy") }
+    var selectedCyclePeriod by remember { mutableIntStateOf(7) }
+    var selectedCycleRemain by remember { mutableIntStateOf(30) }
+
 
 
     LazyColumn{
@@ -253,10 +258,11 @@ fun AccountUI() {
                                             color = Color(0xFFff9f9f), // Light blue color for the circle
                                             shape = RoundedCornerShape(30.dp) // Make the Box a circle
                                         )
+                                        .clickable { showDialogPeriod = true }
                                 ) {
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = "-- Days",
+                                            text = "$selectedCyclePeriod Days",
                                             style = MaterialTheme.typography.headlineSmall.copy(
                                                 fontWeight = FontWeight.ExtraBold, // Make it stand out
                                                 color = Color(0xFFFFFAD7)// A bold reddish-pink color
@@ -287,10 +293,11 @@ fun AccountUI() {
                                             color = Color(0xFFFFBE5E),
                                             shape = RoundedCornerShape(30.dp)
                                         )
+                                        .clickable { showDialogRemain = true }
                                 ) {
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = "-- Days",
+                                            text = "$selectedCycleRemain Days",
                                             style = MaterialTheme.typography.headlineSmall.copy(
                                                 fontWeight = FontWeight.ExtraBold, // Make it stand out
                                                 color = Color(0xFFFFFAD7)// A bold reddish-pink color
@@ -382,7 +389,19 @@ fun AccountUI() {
                     show = showDialogMoods,
                     onDismiss = { showDialogMoods = false },
                     selectedMood = selectedMood,
-                    onMoodChange = { selectedMood = it },
+                    onMoodChange = { selectedMood = it }
+                )
+                DialogCycleBox(
+                    show = showDialogPeriod,
+                    onDismiss = { showDialogPeriod = false },
+                    selectedDays = selectedCyclePeriod,
+                    onDaysChange = { selectedCyclePeriod = it },
+                )
+                DialogCycleBox(
+                    show = showDialogRemain,
+                    onDismiss = { showDialogRemain = false },
+                    selectedDays = selectedCycleRemain,
+                    onDaysChange = { selectedCycleRemain = it },
                 )
             }
         }
@@ -438,10 +457,14 @@ fun DialogWeightBox(
 ) {
     if (show) {
         Dialog(onDismissRequest = { onDismiss() }) {
-            val listState = rememberLazyListState(initialFirstVisibleItemIndex = 60 - 30)
 
-            LaunchedEffect(remember { derivedStateOf { listState.firstVisibleItemIndex } }) {
-                onWeightChange(listState.firstVisibleItemIndex + 31)
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedWeight - 31)
+            val visibleWeight by remember {
+                derivedStateOf { listState.firstVisibleItemIndex + 31 }
+            }
+
+            LaunchedEffect(visibleWeight) {
+                onWeightChange(visibleWeight)
             }
 
             Surface(
@@ -548,7 +571,7 @@ fun DialogMoodBox(
                         modifier = Modifier.height(400.dp)
                     ) {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(3) // Number of columns you want
+                            columns = GridCells.Adaptive(120.dp)
                         ) {
                             items(listOf("Happy", "Sad", "Exited", "Confuse", "Lazy", "Craving",
                                     "Ice Cream")) { unit ->
@@ -569,6 +592,76 @@ fun DialogMoodBox(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     androidx.compose.material3.Text("Track moods to record your body!")
+                    Button(
+                        onClick = { onDismiss() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
+                    ) {
+                        androidx.compose.material3.Text("Done!")
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DialogCycleBox(
+    show: Boolean,
+    onDismiss: () -> Unit,
+    selectedDays: Int,
+    onDaysChange: (Int) -> Unit,
+) {
+    if (show) {
+        Dialog(onDismissRequest = { onDismiss() }) {
+
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedDays - 1)
+
+            val visibleDays by remember {
+                derivedStateOf { listState.firstVisibleItemIndex + 1}
+            }
+
+            LaunchedEffect(visibleDays) {
+                onDaysChange(visibleDays)
+            }
+
+            Surface(
+                modifier = Modifier.wrapContentSize(),
+                shape = MaterialTheme.shapes.small,
+                color = Color(0xFFFFD495)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "How Many Days?",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                        Box(
+                            modifier = Modifier.height(120.dp)
+                        ) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.height(120.dp)
+                            ) {
+                                items((0..100).toList()) { weight ->
+                                    Text(
+                                        text = weight.toString(),
+                                        fontSize = if (weight == selectedDays) 24.sp else 18.sp,
+                                        fontWeight = if (weight == selectedDays) FontWeight.Bold else FontWeight.Normal,
+                                        modifier = Modifier.padding(4.dp),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    androidx.compose.material3.Text("Track Cycle to record your body!")
                     Button(
                         onClick = { onDismiss() },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
