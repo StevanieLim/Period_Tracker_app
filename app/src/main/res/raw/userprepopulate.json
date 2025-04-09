@@ -1,0 +1,8 @@
+[
+  {
+    "UserId":1,
+    "name":"user",
+    "averagePeriod" : 7,
+    "averageCycle": 30
+  }
+]

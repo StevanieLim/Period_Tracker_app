@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,25 +45,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.navigation.NavHostController
+import com.example.periodcycle.database.HistoryDate
 import io.github.boguszpawlowski.composecalendar.Calendar
+import io.github.boguszpawlowski.composecalendar.day.DayState
 import io.github.boguszpawlowski.composecalendar.rememberCalendarState
+import io.github.boguszpawlowski.composecalendar.rememberSelectableCalendarState
+import io.github.boguszpawlowski.composecalendar.selection.EmptySelectionState
+import io.github.boguszpawlowski.composecalendar.selection.SelectionMode
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
-fun CalenderUI() {
+fun CalenderUI(viewModel: HistoryDateViewModel , cyclePeriod: Int){
+    val dates by viewModel.allDates.collectAsState(initial = emptyList())
+    var isPeriodDay by remember { mutableStateOf(false) }
     LazyColumn(
     modifier = Modifier.background(Color(0xFFFFFAD7))
-    ) {
+    ){
         item {
 //             Calendar Section
-            CustomCalendarView()
+            CustomCalendarView(viewModel = viewModel, isPeriodDay = isPeriodDay, cyclePeriod = cyclePeriod)
 
             // Add Cycle Button
             Button(
                 onClick = {
-                    // Logic to add a new cycle
+//                    viewModel.saveDate("2024-05-20","2024-05-27")
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
@@ -79,25 +89,17 @@ fun CalenderUI() {
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
-            CycleHistoryList(
-                cycles = listOf(
-                    Cycle(startDate = "2023-09-01", endDate = "2023-09-05"),
-                    Cycle(startDate = "2023-08-01", endDate = "2023-08-05"),
-                    Cycle(startDate = "2023-09-01", endDate = "2023-09-05"),
-                    Cycle(startDate = "2023-09-01", endDate = "2023-09-05"),
-                    Cycle(startDate = "2023-08-01", endDate = "2023-08-05"),
-                    Cycle(startDate = "2023-09-01", endDate = "2023-09-05"),
-                    Cycle(startDate = "2023-08-01", endDate = "2023-08-05")
-                )
-            )
+            HistoryList(viewModel = viewModel, dates = dates)
         }
     }
 }
 
+
 @Composable
-fun CustomCalendarView() {
+fun CustomCalendarView(viewModel: HistoryDateViewModel ,isPeriodDay : Boolean, cyclePeriod:Int) {
     var showDialog by remember { mutableStateOf(false) }
     val calendarState = rememberCalendarState()
+    var seledtedDay by remember { mutableStateOf<DayState<EmptySelectionState>?>(null) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -152,16 +154,17 @@ fun CustomCalendarView() {
                         .padding(1.dp)
                         .size(48.dp) // Set a fixed size for uniform circles
                         .background(
-                            if (day.isCurrentDay) Color(0xFFFFBE5E).copy(alpha = 0.8f)
+                            if (isPeriodDay) Color(0xFFE97777)
+                            else if (day.isCurrentDay) Color(0xFFFFBE5E).copy(alpha = 0.8f)
                             else if (day.isFromCurrentMonth) Color(0xFFFCDDB0)
                             else Color(0xFFFCDDB0).copy(alpha = 0.3f),
                             if (day.isCurrentDay) RoundedCornerShape(50) else RoundedCornerShape(20)
                         )
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = rememberRipple(bounded = true) // Adds a ripple effect
-                        )
-                        {
+                            indication = rememberRipple(bounded = true), // Adds a ripple effect
+                        ) {
+                            seledtedDay = day
                             showDialog = true
                         },
                     contentAlignment = Alignment.Center
@@ -175,15 +178,19 @@ fun CustomCalendarView() {
                 }
             }
         )
-        DialogBox(
+        DialogBloodBox(
             show = showDialog,
-            onDismiss = { showDialog = false }
+            onDismiss = { showDialog = false },
+            day = seledtedDay,
+            viewModel = viewModel,
+            cycle = cyclePeriod
         )
     }
 }
 
 @Composable
-fun DialogBox(show : Boolean, onDismiss : () -> Unit){
+fun DialogBloodBox(viewModel: HistoryDateViewModel ,show : Boolean, onDismiss : () -> Unit,
+                   day : DayState<EmptySelectionState>?, cycle : Int){
     var rating by remember { mutableStateOf(0) }
     if (show) {
         Dialog(onDismissRequest = {onDismiss()}) {
@@ -196,6 +203,10 @@ fun DialogBox(show : Boolean, onDismiss : () -> Unit){
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
+
+                    Text(text = day?.date.toString(), style = MaterialTheme.typography.headlineSmall)
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Text(text = "How is Your Blood Flow?", style = MaterialTheme.typography.headlineSmall)
                     Spacer(modifier = Modifier.height(16.dp))
                     StarRating(
@@ -205,12 +216,13 @@ fun DialogBox(show : Boolean, onDismiss : () -> Unit){
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Track Your Blood Flow to record your body!")
                     Button(
-                        onClick = { onDismiss() },
+                        onClick = {
+                            day?.date?.let { viewModel.saveDate(it,it.plusDays(cycle.toLong())) }
+                            onDismiss() },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         Text("Done!")
                     }
-
                 }
             }
         }
@@ -256,13 +268,13 @@ fun StarRating(
 
 
 @Composable
-fun CycleHistoryList(cycles: List<Cycle>) {
+fun HistoryList(viewModel: HistoryDateViewModel, dates: List<HistoryDate>) {
     Column {
-        if (cycles.isEmpty()) {
+        if (dates.isEmpty()) {
             Text("No cycles recorded yet.")
         } else {
-            cycles.forEach { cycle ->
-                CycleItem(cycle = cycle)
+            dates.forEach { date ->
+                HistoryItem(viewModel=viewModel,date = date)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -270,27 +282,26 @@ fun CycleHistoryList(cycles: List<Cycle>) {
 }
 
 @Composable
-fun CycleItem(cycle: Cycle) {
+fun HistoryItem(viewModel: HistoryDateViewModel, date: HistoryDate) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { viewModel.deleteDate(date.id) },
         colors = CardDefaults.cardColors(Color(0xFFF5C57E))
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Start: ${cycle.startDate}",
+                text = "Start: ${date.startDate}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "End: ${cycle.endDate}",
+                text = "End: ${date.endDate}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
     }
 }
 
-data class Cycle(
-    val startDate: String,
-    val endDate: String
-)
+

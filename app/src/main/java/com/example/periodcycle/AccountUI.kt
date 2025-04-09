@@ -26,14 +26,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,17 +55,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.periodcycle.database.UserData
+import com.example.periodcycle.database.UserDatabase
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun AccountUI() {
+fun AccountUI(
+    selectedCyclePeriod: Int, onPeriodChange: (Int) -> Unit,
+    selectedCycleRemain: Int, onRemainChange: (Int) -> Unit,
+    viewModel: UserViewModel
+) {
     var water by remember { mutableIntStateOf(0) }
     var showDialogAcc by remember { mutableStateOf(false) }
     var showDialogMoods by remember { mutableStateOf(false) }
@@ -64,12 +83,11 @@ fun AccountUI() {
     var selectedWeight by remember { mutableIntStateOf(60) }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedMood by remember { mutableStateOf("Happy") }
-    var selectedCyclePeriod by remember { mutableIntStateOf(7) }
-    var selectedCycleRemain by remember { mutableIntStateOf(30) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val user by viewModel.allUser.collectAsState(initial = emptyList())
 
 
-
-    LazyColumn{
+    LazyColumn {
         item {
             Box( //Darker skin color background
                 modifier = Modifier
@@ -91,17 +109,42 @@ fun AccountUI() {
                                 shape = CircleShape // Make the Box a circle
                             )
                     )
-                    Text(
-                        text = "Stevanie",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.ExtraBold, // Make it stand out
-                            color = Color.White // A bold reddish-pink color
-                        ),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 30.dp)
-                    )
+                    if (user.isEmpty()){Text(text = "no user")}
+                    else {
+                            var username by remember { mutableStateOf(user[0].name) }
+                            TextField(
+                                value = username, // You can replace this with a mutable state if you want to make it editable
+                                onValueChange = {
+                                    username = it
+                                }, // Handle the value change here if you want the field to be editable
+                                textStyle = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold, // Make it stand out
+                                    color = Color.White, // Text color
+                                    textAlign = TextAlign.Center
+                                ),
+                                modifier = Modifier
+                                    .padding(top = 10.dp)
+                                    .align(Alignment.CenterHorizontally),
+                                singleLine = true, // If you want to ensure the text stays on one line,
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    focusedLabelColor = Color.Transparent,
+                                    unfocusedLabelColor = Color.Transparent,
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text, // Set the keyboard type
+                                    imeAction = ImeAction.Done // Set the action on the 'Enter' key
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        keyboardController?.hide()
+                                        viewModel.UpdateName(user[0].UserId, username)
+                                    }
+                                )
+                            )
+                        }
+
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         horizontalArrangement = Arrangement.Center,
@@ -395,13 +438,13 @@ fun AccountUI() {
                     show = showDialogPeriod,
                     onDismiss = { showDialogPeriod = false },
                     selectedDays = selectedCyclePeriod,
-                    onDaysChange = { selectedCyclePeriod = it },
+                    onDaysChange = { newDays -> onPeriodChange(newDays) },
                 )
                 DialogCycleBox(
                     show = showDialogRemain,
                     onDismiss = { showDialogRemain = false },
                     selectedDays = selectedCycleRemain,
-                    onDaysChange = { selectedCycleRemain = it },
+                    onDaysChange = { newDays -> onRemainChange(newDays) },
                 )
             }
         }
@@ -458,7 +501,8 @@ fun DialogWeightBox(
     if (show) {
         Dialog(onDismissRequest = { onDismiss() }) {
 
-            val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedWeight - 31)
+            val listState =
+                rememberLazyListState(initialFirstVisibleItemIndex = selectedWeight - 31)
             val visibleWeight by remember {
                 derivedStateOf { listState.firstVisibleItemIndex + 31 }
             }
@@ -573,18 +617,23 @@ fun DialogMoodBox(
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(120.dp)
                         ) {
-                            items(listOf("Happy", "Sad", "Exited", "Confuse", "Lazy", "Craving",
-                                    "Ice Cream")) { unit ->
-                                    Button(
-                                        onClick = { onMoodChange(unit) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (selectedMood == unit) Color(0xFFE97777
-                                            ) else Color(0xFFFF9F9F)
-                                        ),
-                                        modifier = Modifier.padding(4.dp)
-                                    ) {
-                                        Text(unit, color = Color.White)
-                                    }
+                            items(
+                                listOf(
+                                    "Happy", "Sad", "Exited", "Confuse", "Lazy", "Craving",
+                                    "Ice Cream"
+                                )
+                            ) { unit ->
+                                Button(
+                                    onClick = { onMoodChange(unit) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (selectedMood == unit) Color(
+                                            0xFFE97777
+                                        ) else Color(0xFFFF9F9F)
+                                    ),
+                                    modifier = Modifier.padding(4.dp)
+                                ) {
+                                    Text(unit, color = Color.White)
+                                }
                             }
                         }
                     }
@@ -618,7 +667,7 @@ fun DialogCycleBox(
             val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedDays - 1)
 
             val visibleDays by remember {
-                derivedStateOf { listState.firstVisibleItemIndex + 1}
+                derivedStateOf { listState.firstVisibleItemIndex + 1 }
             }
 
             LaunchedEffect(visibleDays) {
@@ -640,24 +689,24 @@ fun DialogCycleBox(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                        Box(
+                    Box(
+                        modifier = Modifier.height(120.dp)
+                    ) {
+                        LazyColumn(
+                            state = listState,
                             modifier = Modifier.height(120.dp)
                         ) {
-                            LazyColumn(
-                                state = listState,
-                                modifier = Modifier.height(120.dp)
-                            ) {
-                                items((0..100).toList()) { weight ->
-                                    Text(
-                                        text = weight.toString(),
-                                        fontSize = if (weight == selectedDays) 24.sp else 18.sp,
-                                        fontWeight = if (weight == selectedDays) FontWeight.Bold else FontWeight.Normal,
-                                        modifier = Modifier.padding(4.dp),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                            items((0..100).toList()) { weight ->
+                                Text(
+                                    text = weight.toString(),
+                                    fontSize = if (weight == selectedDays) 24.sp else 18.sp,
+                                    fontWeight = if (weight == selectedDays) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.padding(4.dp),
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
