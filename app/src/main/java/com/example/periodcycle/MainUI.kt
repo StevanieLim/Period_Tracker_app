@@ -114,8 +114,6 @@ fun PeriodTrackerApp(
                 composable("Home") { HomePageUi() }
                 composable("Calendar") { CalenderUI(viewModelHistory,selectedCyclePeriod) }
                 composable("Me") { AccountUI(
-                    selectedCyclePeriod = selectedCyclePeriod, onPeriodChange = { newPeriod -> selectedCyclePeriod = newPeriod },
-                    selectedCycleRemain = selectedCycleRemain, onRemainChange = { newRemain -> selectedCycleRemain= newRemain },
                     viewModel = viewModelUser) }
             }
         }

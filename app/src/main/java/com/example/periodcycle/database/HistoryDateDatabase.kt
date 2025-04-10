@@ -39,7 +39,7 @@ abstract class HistoryDateDatabase : RoomDatabase() {
 
 @Database(
     entities = [UserData::class],
-    version = 6,
+    version = 11,
     exportSchema = true)
 abstract class UserDatabase : RoomDatabase() {
     abstract val userDao: UserDao

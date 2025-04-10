@@ -3,6 +3,9 @@ import PeriodTrackerApp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,7 +24,6 @@ class MainActivity : ComponentActivity() {
 //        userData = UserDatabase.getDatabase(applicationContext)
 //        val User1 = UserData(1,"Stevanie",7,30)
 //        userData.userDao().addAUser(User1)
-
         setContent {
             PeriodCycleTheme {
                 val navController = rememberNavController()

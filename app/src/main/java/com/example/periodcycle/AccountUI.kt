@@ -28,16 +28,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -61,31 +57,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.periodcycle.database.UserData
-import com.example.periodcycle.database.UserDatabase
+
+
+//prepopulate and is if is empty is weird
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountUI(
-    selectedCyclePeriod: Int, onPeriodChange: (Int) -> Unit,
-    selectedCycleRemain: Int, onRemainChange: (Int) -> Unit,
-    viewModel: UserViewModel
-) {
+fun AccountUI(viewModel: UserViewModel) {
     var water by remember { mutableIntStateOf(0) }
     var showDialogAcc by remember { mutableStateOf(false) }
     var showDialogMoods by remember { mutableStateOf(false) }
-    var showDialogPeriod by remember { mutableStateOf(false) }
-    var showDialogRemain by remember { mutableStateOf(false) }
+    var showDialogCycle by remember { mutableStateOf(0) }
     var selectedWeight by remember { mutableIntStateOf(60) }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedMood by remember { mutableStateOf("Happy") }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val user by viewModel.allUser.collectAsState(initial = emptyList())
-
+    val users by viewModel.allUser.collectAsState(initial = emptyList())
+    var currentUser by remember { mutableIntStateOf(0) }
+//    if (users.isEmpty()) viewModel.saveUser(1,"user",7,30)
 
     LazyColumn {
         item {
@@ -109,42 +103,42 @@ fun AccountUI(
                                 shape = CircleShape // Make the Box a circle
                             )
                     )
-                    if (user.isEmpty()){Text(text = "no user")}
+                    if(users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
                     else {
-                            var username by remember { mutableStateOf(user[0].name) }
-                            TextField(
-                                value = username, // You can replace this with a mutable state if you want to make it editable
-                                onValueChange = {
-                                    username = it
-                                }, // Handle the value change here if you want the field to be editable
-                                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                    color = Color.White, // Text color
-                                    textAlign = TextAlign.Center
-                                ),
-                                modifier = Modifier
-                                    .padding(top = 10.dp)
-                                    .align(Alignment.CenterHorizontally),
-                                singleLine = true, // If you want to ensure the text stays on one line,
-                                colors = TextFieldDefaults.outlinedTextFieldColors(
-                                    focusedLabelColor = Color.Transparent,
-                                    unfocusedLabelColor = Color.Transparent,
-                                    focusedBorderColor = Color.Transparent,
-                                    unfocusedBorderColor = Color.Transparent,
-                                ),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Text, // Set the keyboard type
-                                    imeAction = ImeAction.Done // Set the action on the 'Enter' key
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = {
-                                        keyboardController?.hide()
-                                        viewModel.UpdateName(user[0].UserId, username)
-                                    }
-                                )
-                            )
-                        }
+                        var username by remember { mutableStateOf(users[currentUser].name) }
 
+                        TextField(
+                            value = username,
+                            onValueChange = {
+                                username = it
+                            },
+                            textStyle = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.ExtraBold, // Make it stand out
+                                color = Color.White, // Text color
+                                textAlign = TextAlign.Center
+                            ),
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                                .align(Alignment.CenterHorizontally),
+                            singleLine = true, // If you want to ensure the text stays on one line,
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedLabelColor = Color.Transparent,
+                                unfocusedLabelColor = Color.Transparent,
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text, // Set the keyboard type
+                                imeAction = ImeAction.Done // Set the action on the 'Enter' key
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    keyboardController?.hide()
+                                    viewModel.UpdateName(users[currentUser].UserId, username + "")
+                                }
+                            )
+                        )
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         horizontalArrangement = Arrangement.Center,
@@ -301,11 +295,14 @@ fun AccountUI(
                                             color = Color(0xFFff9f9f), // Light blue color for the circle
                                             shape = RoundedCornerShape(30.dp) // Make the Box a circle
                                         )
-                                        .clickable { showDialogPeriod = true }
+                                        .clickable { showDialogCycle = 1 }
                                 ) {
+                                    var _period by remember { mutableStateOf(" ")}
+                                    if (users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
+                                    else {_period = users[currentUser].averagePeriod.toString() }
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = "$selectedCyclePeriod Days",
+                                            text = "$_period Days",
                                             style = MaterialTheme.typography.headlineSmall.copy(
                                                 fontWeight = FontWeight.ExtraBold, // Make it stand out
                                                 color = Color(0xFFFFFAD7)// A bold reddish-pink color
@@ -336,11 +333,14 @@ fun AccountUI(
                                             color = Color(0xFFFFBE5E),
                                             shape = RoundedCornerShape(30.dp)
                                         )
-                                        .clickable { showDialogRemain = true }
+                                        .clickable { showDialogCycle = 2 }
                                 ) {
+                                    var _cycle by remember { mutableStateOf(" ")}
+                                    if (users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
+                                    else {_cycle = users[currentUser].averageCycle.toString() }
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = "$selectedCycleRemain Days",
+                                            text = "$_cycle Days",
                                             style = MaterialTheme.typography.headlineSmall.copy(
                                                 fontWeight = FontWeight.ExtraBold, // Make it stand out
                                                 color = Color(0xFFFFFAD7)// A bold reddish-pink color
@@ -435,16 +435,22 @@ fun AccountUI(
                     onMoodChange = { selectedMood = it }
                 )
                 DialogCycleBox(
-                    show = showDialogPeriod,
-                    onDismiss = { showDialogPeriod = false },
-                    selectedDays = selectedCyclePeriod,
-                    onDaysChange = { newDays -> onPeriodChange(newDays) },
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    show = showDialogCycle,
+                    onDismiss = { showDialogCycle = 0 },
+                    user = users
+//                    selectedDays = selectedCyclePeriod,
+//                    onDaysChange = { newDays -> onPeriodChange(newDays) },
                 )
                 DialogCycleBox(
-                    show = showDialogRemain,
-                    onDismiss = { showDialogRemain = false },
-                    selectedDays = selectedCycleRemain,
-                    onDaysChange = { newDays -> onRemainChange(newDays) },
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    show = showDialogCycle,
+                    onDismiss = { showDialogCycle = 0 },
+                    user = users
+//                    selectedDays = selectedCycleRemain,
+//                    onDaysChange = { newDays -> onRemainChange(newDays) },
                 )
             }
         }
@@ -656,23 +662,30 @@ fun DialogMoodBox(
 
 @Composable
 fun DialogCycleBox(
-    show: Boolean,
+    viewModel: UserViewModel,
+    currentUser : Int,
+    show: Int,
     onDismiss: () -> Unit,
-    selectedDays: Int,
-    onDaysChange: (Int) -> Unit,
+    user: List<UserData>
+//    selectedDays: Int,
+//    onDaysChange: (Int) -> Unit,
 ) {
-    if (show) {
+    if (show != 0) {
         Dialog(onDismissRequest = { onDismiss() }) {
 
-            val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedDays - 1)
+            var nowHandleWhat = 0
+            if (show.equals(1)) nowHandleWhat = user[currentUser].averagePeriod!!
+            else nowHandleWhat = user[currentUser].averageCycle!!
+
+            val listState = rememberLazyListState(initialFirstVisibleItemIndex = nowHandleWhat - 1)
 
             val visibleDays by remember {
                 derivedStateOf { listState.firstVisibleItemIndex + 1 }
             }
 
-            LaunchedEffect(visibleDays) {
-                onDaysChange(visibleDays)
-            }
+//            LaunchedEffect(visibleDays) {
+//                onDaysChange(visibleDays)
+//            }
 
             Surface(
                 modifier = Modifier.wrapContentSize(),
@@ -688,7 +701,6 @@ fun DialogCycleBox(
                         style = MaterialTheme.typography.headlineSmall
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-
                     Box(
                         modifier = Modifier.height(120.dp)
                     ) {
@@ -699,8 +711,8 @@ fun DialogCycleBox(
                             items((0..100).toList()) { weight ->
                                 Text(
                                     text = weight.toString(),
-                                    fontSize = if (weight == selectedDays) 24.sp else 18.sp,
-                                    fontWeight = if (weight == selectedDays) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = if (weight == nowHandleWhat) 24.sp else 18.sp,
+                                    fontWeight = if (weight == nowHandleWhat) FontWeight.Bold else FontWeight.Normal,
                                     modifier = Modifier.padding(4.dp),
                                     textAlign = TextAlign.Center
                                 )
@@ -712,7 +724,11 @@ fun DialogCycleBox(
 
                     androidx.compose.material3.Text("Track Cycle to record your body!")
                     Button(
-                        onClick = { onDismiss() },
+                        onClick = {
+                            onDismiss()
+                            if (show.equals(1)) viewModel.UpdataPeriod(user[currentUser].UserId,visibleDays)
+                            else viewModel.UpdataCycle(user[currentUser].UserId,visibleDays)
+                                  },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")

@@ -20,7 +20,7 @@ class HistoryDateViewModel(application: Application) : AndroidViewModel(applicat
     private val db = HistoryDateDatabase.getDatabase(application)
     private val dao = db.historyDateDao()
 
-    val allDates: Flow<List<HistoryDate>>  = dao.getAllHistory()  // Flow automatically updates UI
+    val allDates: Flow<List<HistoryDate>>  = dao.getAllHistory()
 
     fun saveDate(date: LocalDate, date2:LocalDate) {
         viewModelScope.launch {
@@ -41,9 +41,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     val allUser: Flow<List<UserData>>  = dao.getUser()  // Flow automatically updates UI
 
-    fun saveUser(name : String, period : Int, Cycle : Int) {
+    fun saveUser(id : Int, name : String, period : Int, Cycle : Int) {
         viewModelScope.launch {
-            dao.addAUser(UserData(name = name, averagePeriod = period, averageCycle = Cycle))
+            dao.addAUser(UserData(UserId = id, name = name, averagePeriod = period, averageCycle = Cycle))
         }
     }
 
@@ -59,5 +59,28 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun UpdataPeriod(id: Int, newPeriod: Int){
+        viewModelScope.launch {
+            dao.updatePeriod(id = id, newPeriod= newPeriod)
+        }
+    }
+
+    fun UpdataCycle(id: Int, newCycle: Int){
+        viewModelScope.launch {
+            dao.updateCycle(id = id, newCycle = newCycle)
+        }
+    }
+
+    fun GetName(id: Int) : String{
+        return dao.getNameById(id = id)
+    }
+
+    fun GetPeriod(id: Int): Int{
+        return dao.getPeriodById(id = id)
+    }
+
+    fun GetCycle(id: Int): Int{
+        return dao.getCycleById(id = id)
+    }
 }
 

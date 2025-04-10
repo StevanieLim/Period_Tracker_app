@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 interface HistoryDateDao {
     @Insert
     suspend fun addAHistory(HistoryEntity: HistoryDate)
+
     @Query("Select * from `history-table`")
     fun getAllHistory(): Flow<List<HistoryDate>>
 
@@ -43,4 +44,20 @@ interface UserDao {
 
     @Query("UPDATE `user-table` SET name = :newName WHERE UserId = :id")
     suspend fun updateName(id: Int, newName: String): Int
+
+    @Query("Update `user-table` SET averagePeriod = :newPeriod WHERE UserId = :id")
+    suspend fun updatePeriod(id: Int, newPeriod :Int):Int
+
+    @Query("Update `user-table` SET averageCycle = :newCycle WHERE UserId = :id")
+    suspend fun updateCycle(id: Int, newCycle :Int):Int
+
+    @Query("Select name from `user-table` where UserId=:id")
+    fun getNameById(id: Int): String
+
+    @Query("Select averagePeriod from `user-table` where UserId=:id")
+    fun getPeriodById(id: Int): Int
+
+    @Query("Select averageCycle from `user-table` where UserId=:id")
+    fun getCycleById(id: Int): Int
+
 }
