@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 @Dao
 interface HistoryDateDao {
@@ -50,14 +51,29 @@ interface UserDao {
 
     @Query("Update `user-table` SET averageCycle = :newCycle WHERE UserId = :id")
     suspend fun updateCycle(id: Int, newCycle :Int):Int
+}
 
-    @Query("Select name from `user-table` where UserId=:id")
-    fun getNameById(id: Int): String
+@Dao
+interface UserHistoryDao {
+    @Insert
+    suspend fun addAUserHistory(UserHistoryEntity: UserHistory)
 
-    @Query("Select averagePeriod from `user-table` where UserId=:id")
-    fun getPeriodById(id: Int): Int
+    @Query("Select * from `user-history-table` ORDER BY date DESC")
+    fun getAllUserHistory(): Flow<List<UserHistory>>
 
-    @Query("Select averageCycle from `user-table` where UserId=:id")
-    fun getCycleById(id: Int): Int
+    @Query("DELETE FROM 'user-history-table' WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM `user-history-table` WHERE date = :date")
+    fun getAUserHistoryByDate(date: LocalDate): Flow<UserHistory>
+
+    @Query("Update `user-history-table` SET weight = :newWeight WHERE date = :date")
+    suspend fun updateWeight(date: LocalDate, newWeight :Int) :Int
+
+    @Query("Update `user-history-table` SET mood = :newMood WHERE date = :date")
+    suspend fun updateMood(date: LocalDate, newMood :String) :Int
+
+    @Query("Update `user-history-table` SET water = :newWater WHERE date = :date")
+    suspend fun updateWater(date: LocalDate, newWater :Int) :Int
 
 }

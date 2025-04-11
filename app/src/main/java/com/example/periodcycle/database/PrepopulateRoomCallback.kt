@@ -14,7 +14,7 @@ class PrepopulateRoomCallback(private val context: Context) : RoomDatabase.Callb
 
     override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
-
+        Log.d("User App", "onCreate called — Databasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssase is being created")
         CoroutineScope(Dispatchers.IO).launch {
             prePopulateUsers(context)
         }

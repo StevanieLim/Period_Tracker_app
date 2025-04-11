@@ -32,11 +32,10 @@ import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -51,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,178 +61,333 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.periodcycle.database.UserData
+import com.example.periodcycle.database.UserHistory
 
 
 //prepopulate and is if is empty is weird
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountUI(viewModel: UserViewModel) {
+fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
     var water by remember { mutableIntStateOf(0) }
-    var showDialogAcc by remember { mutableStateOf(false) }
-    var showDialogMoods by remember { mutableStateOf(false) }
-    var showDialogCycle by remember { mutableStateOf(0) }
-    var selectedWeight by remember { mutableIntStateOf(60) }
+    var showDialog by remember { mutableIntStateOf(0) }
+    var selectedWeight by remember { mutableStateOf(50) }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedMood by remember { mutableStateOf("Happy") }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val users by viewModel.allUser.collectAsState(initial = emptyList())
-    var currentUser by remember { mutableIntStateOf(0) }
-//    if (users.isEmpty()) viewModel.saveUser(1,"user",7,30)
+    val currentUser by remember { mutableIntStateOf(0)}
+    val context = LocalContext.current
 
-    LazyColumn {
-        item {
-            Box( //Darker skin color background
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.TopCenter
-            )
-            {
-                Column(
+    LaunchedEffect(Unit) {
+        viewModel.saveUserOnce(context)
+        viewModel2.saveUserHistoryOnce(context)
+        viewModel2.getUserHistory()
+    }
+
+    val currentuserInfo by viewModel2.userHistory.collectAsState()
+
+    if (users.isEmpty()) {
+        Text(text = "no user yet")
+    } else {
+        LazyColumn {
+            item {
+                Box( //Darker skin color background
                     modifier = Modifier
-                        .padding(30.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter
+                )
+                {
+                    Column(
                         modifier = Modifier
-                            .padding(top = 30.dp)
-                            .size(130.dp)
-                            .background(
-                                color = Color.White, // Light blue color for the circle
-                                shape = CircleShape // Make the Box a circle
-                            )
-                    )
-                    if(users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
-                    else {
-                        var username by remember { mutableStateOf(users[currentUser].name) }
+                            .padding(30.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
 
-                        TextField(
-                            value = username,
-                            onValueChange = {
-                                username = it
-                            },
-                            textStyle = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                color = Color.White, // Text color
-                                textAlign = TextAlign.Center
-                            ),
+                        if (usersinfo.isEmpty()) {
+                            androidx.compose.material3.Text("No cycles recorded yet.")
+                        } else {
+                            usersinfo.forEach { info ->
+                                Text(text = info.id.toString())
+                                Text(text = info.date.toString())
+                                Text(text = info.weight.toString())
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                        
+                        Text(text = currentuserInfo.toString())
+
+                        Box(
                             modifier = Modifier
-                                .padding(top = 10.dp)
-                                .align(Alignment.CenterHorizontally),
-                            singleLine = true, // If you want to ensure the text stays on one line,
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                focusedLabelColor = Color.Transparent,
-                                unfocusedLabelColor = Color.Transparent,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent,
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text, // Set the keyboard type
-                                imeAction = ImeAction.Done // Set the action on the 'Enter' key
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    keyboardController?.hide()
-                                    viewModel.UpdateName(users[currentUser].UserId, username + "")
-                                }
-                            )
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) { //Weight and Height
-                        Box( //Weight
-                            modifier = Modifier
-                                .height(100.dp)
-                                .weight(1f)
+                                .padding(top = 30.dp)
+                                .size(130.dp)
                                 .background(
-                                    color = Color(0xFFFFFAD7),
-                                    shape = RoundedCornerShape(30.dp)
+                                    color = Color.White, // Light blue color for the circle
+                                    shape = CircleShape // Make the Box a circle
                                 )
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = rememberRipple(bounded = true)
-                                ) {
-                                    showDialogAcc = true
-                                }
-                        ) {
-                            Row(
+                        )
+                            var username by remember { mutableStateOf(users[currentUser].name) }
+                            TextField(
+                                value = username,
+                                onValueChange = {
+                                    username = it
+                                },
+                                textStyle = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold, // Make it stand out
+                                    color = Color.White, // Text color
+                                    textAlign = TextAlign.Center
+                                ),
                                 modifier = Modifier
-                                    .padding(10.dp)
-                                    .align(Alignment.CenterStart)
-                                    .fillMaxWidth(),
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.scale),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .weight(0.4f)
-                                        .align(Alignment.CenterVertically)
+                                    .padding(top = 10.dp)
+                                    .align(Alignment.CenterHorizontally),
+                                singleLine = true, // If you want to ensure the text stays on one line,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedLabelColor = Color.Transparent,
+                                    unfocusedLabelColor = Color.Transparent,
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text, // Set the keyboard type
+                                    imeAction = ImeAction.Done // Set the action on the 'Enter' key
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        keyboardController?.hide()
+                                        viewModel.UpdateName(
+                                            users[currentUser].UserId,
+                                            username + ""
+                                        )
+                                    }
                                 )
-                                Column(modifier = Modifier.weight(0.6f)) {
-                                    Text(
-                                        text = "Weight",
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            fontWeight = FontWeight.Bold, // Make it stand out
-                                            color = Color(0xFFE97777) // A bold reddish-pink color
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
+                            )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { //Weight and Height
+                            Box( //Weight
+                                modifier = Modifier
+                                    .height(100.dp)
+                                    .weight(1f)
+                                    .background(
+                                        color = Color(0xFFFFFAD7),
+                                        shape = RoundedCornerShape(30.dp)
                                     )
-                                    Text(
-                                        text = "$selectedWeight $selectedUnit",
-                                        fontWeight = FontWeight.Normal,
-                                        fontSize = 23.sp,// Make it stand out
-                                        color = Color(0xFFE97777), // A bold reddish-pink color ,
-                                        textAlign = TextAlign.Center,
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = rememberRipple(bounded = true)
+                                    ) {
+                                        showDialog = 3
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .align(Alignment.CenterStart)
+                                        .fillMaxWidth(),
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.scale),
+                                        contentDescription = null,
                                         modifier = Modifier
-                                            .fillMaxWidth()
+                                            .weight(0.4f)
+                                            .align(Alignment.CenterVertically)
                                     )
+                                    Column(modifier = Modifier.weight(0.6f)) {
+                                        Text(
+                                            text = "Weight",
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold, // Make it stand out
+                                                color = Color(0xFFE97777) // A bold reddish-pink color
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        )
+                                        Text(
+//                                            text = "$selectedWeight $selectedUnit",
+                                            text = "${currentuserInfo?.weight}  $selectedUnit",
+                                            fontWeight = FontWeight.Normal,
+                                            fontSize = 23.sp,// Make it stand out
+                                            color = Color(0xFFE97777), // A bold reddish-pink color ,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Box(//Moods
+                                modifier = Modifier
+                                    .height(100.dp)
+                                    .weight(1f)
+                                    .background(
+                                        color = Color(0xFFFFFAD7), // Light blue color for the circle
+                                        shape = RoundedCornerShape(30.dp) // Make the Box a circle
+                                    )
+                                    .clickable { showDialog = 4 }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .align(Alignment.CenterStart)
+                                        .fillMaxWidth()
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.moods),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterVertically)
+                                            .weight(0.4f)
+                                    )
+                                    Column(modifier = Modifier.weight(0.6f)) {
+                                        Text(
+                                            text = "Moods",
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold, // Make it stand out
+                                                color = Color(0xFFE97777) // A bold reddish-pink color
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        )
+                                        Text(
+                                            text = "${currentuserInfo?.mood}",
+                                            fontWeight = FontWeight.Normal,
+                                            fontSize = 20.sp,// Make it stand out
+                                            color = Color(0xFFE97777), // A bold reddish-pink color ,
+                                            textAlign = TextAlign.Left,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        )
+                                    }
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(//Moods
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(//Cycle
                             modifier = Modifier
-                                .height(100.dp)
-                                .weight(1f)
+                                .height(250.dp)
+                                .fillMaxWidth()
                                 .background(
-                                    color = Color(0xFFFFFAD7), // Light blue color for the circle
-                                    shape = RoundedCornerShape(30.dp) // Make the Box a circle
+                                    color = Color(0xFFFFFAD7),
+                                    shape = RoundedCornerShape(40.dp)
                                 )
-                                .clickable { showDialogMoods = true }
-                        ) {
-                            Row(
+                        )
+                        {// Cycle content
+                            Column(
                                 modifier = Modifier
-                                    .padding(10.dp)
-                                    .align(Alignment.CenterStart)
-                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.moods),
-                                    contentDescription = null,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
-                                        .align(Alignment.CenterVertically)
-                                        .weight(0.4f)
-                                )
-                                Column(modifier = Modifier.weight(0.6f)) {
-                                    Text(
-                                        text = "Moods",
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            fontWeight = FontWeight.Bold, // Make it stand out
-                                            color = Color(0xFFE97777) // A bold reddish-pink color
-                                        ),
+                                        .fillMaxWidth()
+                                        .wrapContentWidth(Alignment.Start),
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.cycle),
+                                        contentDescription = null,
                                         modifier = Modifier
-                                            .fillMaxWidth()
+                                            .weight(0.2f)
                                     )
                                     Text(
-                                        text = selectedMood,
-                                        fontWeight = FontWeight.Normal,
-                                        fontSize = 20.sp,// Make it stand out
-                                        color = Color(0xFFE97777), // A bold reddish-pink color ,
+                                        text = "Cycle",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFFD86666)
+                                        ),
+                                        textAlign = TextAlign.Left,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 8.dp)
+                                            .weight(0.8f)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Box(//average period
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(80.dp)
+                                            .background(
+                                                color = Color(0xFFff9f9f),
+                                                shape = RoundedCornerShape(30.dp)
+                                            )
+                                            .clickable { showDialog = 1 }
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            Text(
+                                                text =  "${users[currentUser].averagePeriod} Days",
+                                                style = MaterialTheme.typography.headlineSmall.copy(
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color(0xFFFFFAD7)
+                                                ),
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                            )
+                                            Text(
+                                                text = "Average Period",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color.White
+                                                ),
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 4.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Box(//average Cycle
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(80.dp)
+                                            .background(
+                                                color = Color(0xFFFFBE5E),
+                                                shape = RoundedCornerShape(30.dp)
+                                            )
+                                            .clickable { showDialog = 2 }
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            Text(
+                                                text = "${users[currentUser].averageCycle} Days",
+                                                style = MaterialTheme.typography.headlineSmall.copy(
+                                                    fontWeight = FontWeight.ExtraBold, // Make it stand out
+                                                    color = Color(0xFFFFFAD7)// A bold reddish-pink color
+                                                ),
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                            )
+                                            Text(
+                                                text = "Average Cycle",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color.White
+                                                ),
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(top = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Row(modifier = Modifier.padding(8.dp)) {
+                                    Text(
+                                        text = "Blood Flow",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFFD86666)
+                                        ),
                                         textAlign = TextAlign.Left,
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -240,221 +395,87 @@ fun AccountUI(viewModel: UserViewModel) {
                                 }
                             }
                         }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(//Cycle
-                        modifier = Modifier
-                            .height(250.dp)
-                            .fillMaxWidth()
-                            .background(
-                                color = Color(0xFFFFFAD7), // Light blue color for the circle
-                                shape = RoundedCornerShape(40.dp) // Make the Box a circle
-                            )
-                    )
-                    {// Cycle content
-                        Column(
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(//water reminder
                             modifier = Modifier
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .fillMaxWidth()
+                                .height(90.dp)
+                                .background(
+                                    color = Color(0xFFFFFAD7),
+                                    shape = RoundedCornerShape(40.dp)
+                                )
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentWidth(Alignment.Start),
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.cycle),
+                                    painter = painterResource(id = R.drawable.water),
                                     contentDescription = null,
                                     modifier = Modifier
+                                        .height(70.dp)
                                         .weight(0.2f)
+                                        .align(Alignment.CenterVertically)
+                                        .padding(start = 10.dp)
                                 )
-                                Text(
-                                    text = "Cycle",
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                        color = Color(0xFFD86666) // A bold reddish-pink color
-                                    ),
-                                    textAlign = TextAlign.Left,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 8.dp)
-                                        .weight(0.8f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Box(//average period
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(80.dp)
-                                        .background(
-                                            color = Color(0xFFff9f9f), // Light blue color for the circle
-                                            shape = RoundedCornerShape(30.dp) // Make the Box a circle
-                                        )
-                                        .clickable { showDialogCycle = 1 }
-                                ) {
-                                    var _period by remember { mutableStateOf(" ")}
-                                    if (users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
-                                    else {_period = users[currentUser].averagePeriod.toString() }
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        Text(
-                                            text = "$_period Days",
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                                color = Color(0xFFFFFAD7)// A bold reddish-pink color
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                        )
-                                        Text(
-                                            text = "Average Period",
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                                color = Color.White// A bold reddish-pink color
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(top = 4.dp)
-                                        )
-                                    }
+                                Column(modifier = Modifier.weight(0.8f)) {
+                                    Text(
+                                        text = "Water Reminder",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFFD86666)
+                                        ),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                    )
+                                    WaterRating(
+                                        water = water,
+                                        onWaterChange = { newRating -> water = newRating }
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Box(//average Cycle
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(80.dp)
-                                        .background(
-                                            color = Color(0xFFFFBE5E),
-                                            shape = RoundedCornerShape(30.dp)
-                                        )
-                                        .clickable { showDialogCycle = 2 }
-                                ) {
-                                    var _cycle by remember { mutableStateOf(" ")}
-                                    if (users.isEmpty()) { Text(text = "asdasdddddddddddddddd")}
-                                    else {_cycle = users[currentUser].averageCycle.toString() }
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        Text(
-                                            text = "$_cycle Days",
-                                            style = MaterialTheme.typography.headlineSmall.copy(
-                                                fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                                color = Color(0xFFFFFAD7)// A bold reddish-pink color
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                        )
-                                        Text(
-                                            text = "Average Cycle",
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                                color = Color.White// A bold reddish-pink color
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(top = 4.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Row(modifier = Modifier.padding(8.dp)) {
-                                Text(
-                                    text = "Blood Flow",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                        color = Color(0xFFD86666)// A bold reddish-pink color
-                                    ),
-                                    textAlign = TextAlign.Left,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(//water reminder
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(90.dp)
-                            .background(
-                                color = Color(0xFFFFFAD7), // Light blue color for the circle
-                                shape = RoundedCornerShape(40.dp) // Make the Box a circle
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.water),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .height(70.dp)
-                                    .weight(0.2f)
-                                    .align(Alignment.CenterVertically)
-                                    .padding(start = 10.dp)
-                            )
-                            Column(modifier = Modifier.weight(0.8f)) {
-                                Text(
-                                    text = "Water Reminder",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFFD86666)
-                                    ),
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                )
-                                WaterRating(
-                                    water = water,
-                                    onWaterChange = { newRating -> water = newRating }
-                                )
-                            }
-                        }
+                    currentuserInfo?.let {
+                        DialogWeightBox(
+                            show = showDialog,
+                            onDismiss = { showDialog = 0 },
+                            selectedUnit = selectedUnit,
+                            onUnitChange = { selectedUnit = it },
+                            userInfo = it,
+                            viewModel = viewModel2
+                        )
                     }
+                    currentuserInfo?.let {
+                        DialogMoodBox(
+                            show = showDialog,
+                            onDismiss = { showDialog = 0 },
+                            selectedMood = selectedMood,
+                            onMoodChange = { selectedMood = it },
+                            userInfo = it,
+                            viewModel = viewModel2
+                        )
+                    }
+                    DialogCycleBox(
+                        viewModel = viewModel,
+                        currentUser = currentUser,
+                        show = showDialog,
+                        onDismiss = { showDialog = 0 },
+                        user = users
+                    )
+                    DialogCycleBox(
+                        viewModel = viewModel,
+                        currentUser = currentUser,
+                        show = showDialog,
+                        onDismiss = { showDialog = 0 },
+                        user = users
+                    )
                 }
-                DialogWeightBox(
-                    show = showDialogAcc,
-                    onDismiss = { showDialogAcc = false },
-                    selectedWeight = selectedWeight,
-                    selectedUnit = selectedUnit,
-                    onWeightChange = { selectedWeight = it },
-                    onUnitChange = { selectedUnit = it },
-                )
-                DialogMoodBox(
-                    show = showDialogMoods,
-                    onDismiss = { showDialogMoods = false },
-                    selectedMood = selectedMood,
-                    onMoodChange = { selectedMood = it }
-                )
-                DialogCycleBox(
-                    viewModel = viewModel,
-                    currentUser = currentUser,
-                    show = showDialogCycle,
-                    onDismiss = { showDialogCycle = 0 },
-                    user = users
-//                    selectedDays = selectedCyclePeriod,
-//                    onDaysChange = { newDays -> onPeriodChange(newDays) },
-                )
-                DialogCycleBox(
-                    viewModel = viewModel,
-                    currentUser = currentUser,
-                    show = showDialogCycle,
-                    onDismiss = { showDialogCycle = 0 },
-                    user = users
-//                    selectedDays = selectedCycleRemain,
-//                    onDaysChange = { newDays -> onRemainChange(newDays) },
-                )
             }
-        }
 
+        }
     }
 }
 
@@ -497,24 +518,20 @@ fun WaterRating(
 
 @Composable
 fun DialogWeightBox(
-    show: Boolean,
+    show: Int,
     onDismiss: () -> Unit,
-    selectedWeight: Int,
     selectedUnit: String,
-    onWeightChange: (Int) -> Unit,
     onUnitChange: (String) -> Unit,
+    userInfo : UserHistory,
+    viewModel: UserHistoryViewModel
 ) {
-    if (show) {
+    if (show == 3) {
         Dialog(onDismissRequest = { onDismiss() }) {
 
             val listState =
-                rememberLazyListState(initialFirstVisibleItemIndex = selectedWeight - 31)
+                rememberLazyListState(initialFirstVisibleItemIndex = userInfo.weight - 31)
             val visibleWeight by remember {
                 derivedStateOf { listState.firstVisibleItemIndex + 31 }
-            }
-
-            LaunchedEffect(visibleWeight) {
-                onWeightChange(visibleWeight)
             }
 
             Surface(
@@ -547,8 +564,8 @@ fun DialogWeightBox(
                                 items((30..200).toList()) { weight ->
                                     Text(
                                         text = weight.toString(),
-                                        fontSize = if (weight == selectedWeight) 24.sp else 18.sp,
-                                        fontWeight = if (weight == selectedWeight) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = if (weight == visibleWeight) 24.sp else 18.sp,
+                                        fontWeight = if (weight == visibleWeight) FontWeight.Bold else FontWeight.Normal,
                                         modifier = Modifier.padding(4.dp),
                                         textAlign = TextAlign.Center
                                     )
@@ -581,7 +598,10 @@ fun DialogWeightBox(
 
                     androidx.compose.material3.Text("Track weight to record your body!")
                     Button(
-                        onClick = { onDismiss() },
+                        onClick = {
+                            onDismiss()
+                            viewModel.UpdataWeight(visibleWeight)
+                                  },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")
@@ -595,18 +615,21 @@ fun DialogWeightBox(
 
 @Composable
 fun DialogMoodBox(
-    show: Boolean,
+    show: Int,
     onDismiss: () -> Unit,
     selectedMood: String,
     onMoodChange: (String) -> Unit,
+    viewModel: UserHistoryViewModel,
+    userInfo: UserHistory
 ) {
-    if (show) {
+    if (show == 4) {
         Dialog(onDismissRequest = { onDismiss() }) {
             Surface(
                 modifier = Modifier.wrapContentSize(),
                 shape = MaterialTheme.shapes.small,
                 color = Color(0xFFFFD495)
             ) {
+                var selected by remember { mutableStateOf(" ") }
                 Column(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -630,9 +653,12 @@ fun DialogMoodBox(
                                 )
                             ) { unit ->
                                 Button(
-                                    onClick = { onMoodChange(unit) },
+                                    onClick = {
+                                        onMoodChange(unit)
+                                        selected = unit
+                                              },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (selectedMood == unit) Color(
+                                        containerColor = if (selected == unit) Color(
                                             0xFFE97777
                                         ) else Color(0xFFFF9F9F)
                                     ),
@@ -648,7 +674,9 @@ fun DialogMoodBox(
 
                     androidx.compose.material3.Text("Track moods to record your body!")
                     Button(
-                        onClick = { onDismiss() },
+                        onClick = { onDismiss()
+                                  viewModel.UpdataMood(selected)
+                                  },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")
@@ -667,25 +695,18 @@ fun DialogCycleBox(
     show: Int,
     onDismiss: () -> Unit,
     user: List<UserData>
-//    selectedDays: Int,
-//    onDaysChange: (Int) -> Unit,
 ) {
-    if (show != 0) {
+    if (show == 1 || show == 2) {
         Dialog(onDismissRequest = { onDismiss() }) {
 
-            var nowHandleWhat = 0
-            if (show.equals(1)) nowHandleWhat = user[currentUser].averagePeriod!!
-            else nowHandleWhat = user[currentUser].averageCycle!!
+            val nowHandleWhat: Int = if (show == 1) user[currentUser].averagePeriod
+            else user[currentUser].averageCycle
 
             val listState = rememberLazyListState(initialFirstVisibleItemIndex = nowHandleWhat - 1)
 
             val visibleDays by remember {
                 derivedStateOf { listState.firstVisibleItemIndex + 1 }
             }
-
-//            LaunchedEffect(visibleDays) {
-//                onDaysChange(visibleDays)
-//            }
 
             Surface(
                 modifier = Modifier.wrapContentSize(),
@@ -711,8 +732,8 @@ fun DialogCycleBox(
                             items((0..100).toList()) { weight ->
                                 Text(
                                     text = weight.toString(),
-                                    fontSize = if (weight == nowHandleWhat) 24.sp else 18.sp,
-                                    fontWeight = if (weight == nowHandleWhat) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = if (weight == visibleDays) 24.sp else 18.sp,
+                                    fontWeight = if (weight == visibleDays) FontWeight.Bold else FontWeight.Normal,
                                     modifier = Modifier.padding(4.dp),
                                     textAlign = TextAlign.Center
                                 )
@@ -726,7 +747,7 @@ fun DialogCycleBox(
                     Button(
                         onClick = {
                             onDismiss()
-                            if (show.equals(1)) viewModel.UpdataPeriod(user[currentUser].UserId,visibleDays)
+                            if (show == 1) viewModel.UpdataPeriod(user[currentUser].UserId,visibleDays)
                             else viewModel.UpdataCycle(user[currentUser].UserId,visibleDays)
                                   },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))

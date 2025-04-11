@@ -1,6 +1,7 @@
 package com.example.periodcycle.database
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -11,6 +12,9 @@ import com.example.periodcycle.database.HistoryDateDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 @Database(
     entities = [HistoryDate::class],
@@ -39,7 +43,7 @@ abstract class HistoryDateDatabase : RoomDatabase() {
 
 @Database(
     entities = [UserData::class],
-    version = 11,
+    version = 1,
     exportSchema = true)
 abstract class UserDatabase : RoomDatabase() {
     abstract val userDao: UserDao
@@ -51,52 +55,46 @@ abstract class UserDatabase : RoomDatabase() {
             synchronized(this) {
                 var instance = DB_INSTANCE
                 if (instance == null) {
+
                     DB_INSTANCE = Room.databaseBuilder(
                         context.applicationContext,
                         UserDatabase::class.java,
                         "user_db"
                     )
                         .fallbackToDestructiveMigration()
-                        .addCallback(PrepopulateRoomCallback(context))
+//                        .createFromAsset("databaseData/userData1.db")
+//                        .addCallback(PrepopulateRoomCallback(context))
                         .build()
                     instance = DB_INSTANCE
                 }
                 return instance!!
             }
-
         }
     }
 }
 
+@Database(
+    entities = [UserHistory::class],
+    version = 7)
+@TypeConverters(LocalDateConverter::class)
+abstract class UserHistoryDatabase : RoomDatabase() {
+    abstract fun userHistoryDao(): UserHistoryDao
 
-//@Database(
-//    entities = [UserData::class],
-//    version = 1)
-//abstract class UserDatabase : RoomDatabase() {
-//    abstract fun userDao(): UserDao
-//
-//    companion object {
-//        @Volatile
-//        private var INSTANCE: UserDatabase? = null
-//
-//        fun getInstance(context: Context): UserDatabase {
-//            return INSTANCE ?: synchronized(this) {
-//                val instance = Room.databaseBuilder(
-//                    context.applicationContext,
-//                    UserDatabase::class.java,
-//                    "user-database"
-//                ).addCallback(object : Callback() {
-//                    override fun onCreate(db: SupportSQLiteDatabase) {
-//                        super.onCreate(db)
-//                        CoroutineScope(Dispatchers.IO).launch {
-//                            getInstance(context).userDao().saveUser(UserData())
-//                        }
-//                    }
-//                })
-//                    .build()
-//                INSTANCE = instance
-//                instance
-//            }
-//        }
-//    }
-//}
+    companion object {
+        private var INSTANCE: UserHistoryDatabase? = null
+
+        fun getDatabase(context: Context): UserHistoryDatabase {
+            if (INSTANCE == null) {
+                INSTANCE = Room.databaseBuilder(
+                    context.applicationContext,
+                    UserHistoryDatabase::class.java,
+                    "user_history_db"
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+            }
+            return INSTANCE!!
+        }
+
+    }
+}

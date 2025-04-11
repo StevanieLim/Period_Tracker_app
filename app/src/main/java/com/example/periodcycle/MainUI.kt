@@ -21,6 +21,7 @@ import com.example.periodcycle.AccountUI
 import com.example.periodcycle.CalenderUI
 import com.example.periodcycle.HistoryDateViewModel
 import com.example.periodcycle.HomePageUi
+import com.example.periodcycle.UserHistoryViewModel
 import com.example.periodcycle.UserViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -31,6 +32,7 @@ fun PeriodTrackerApp(
 ) {
     val viewModelHistory: HistoryDateViewModel = viewModel()
     val viewModelUser: UserViewModel = viewModel()
+    val viewModelUserHistory: UserHistoryViewModel = viewModel()
     var selectedItem by remember { mutableStateOf(0) } // State to track the selected item
     val items = listOf("Home", "Calendar", "Me") // List of bottom bar items
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -113,8 +115,7 @@ fun PeriodTrackerApp(
             ) {
                 composable("Home") { HomePageUi() }
                 composable("Calendar") { CalenderUI(viewModelHistory,selectedCyclePeriod) }
-                composable("Me") { AccountUI(
-                    viewModel = viewModelUser) }
+                composable("Me") { AccountUI(viewModel = viewModelUser, viewModel2 = viewModelUserHistory) }
             }
         }
     }

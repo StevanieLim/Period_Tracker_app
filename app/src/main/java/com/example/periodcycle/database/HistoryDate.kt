@@ -37,4 +37,15 @@ data class UserData(
     @ColumnInfo (name = "name") val name: String,
     @ColumnInfo (name = "averagePeriod") val averagePeriod: Int,
     @ColumnInfo (name = "averageCycle")val averageCycle: Int,
+)
+
+
+@Entity(tableName = "user-history-table")
+data class UserHistory(
+    @PrimaryKey (autoGenerate = true)
+    val id: Long = 0,
+    @ColumnInfo(name = "weight") val weight: Int,
+    @ColumnInfo(name = "mood") val mood: String,
+    @ColumnInfo(name = "water") val water: Int,
+    @ColumnInfo(name = "date") val date: LocalDate,
     )
