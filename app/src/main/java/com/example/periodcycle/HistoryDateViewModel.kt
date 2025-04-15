@@ -2,7 +2,6 @@ package com.example.periodcycle
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -21,6 +20,7 @@ import androidx.compose.runtime.setValue
 import com.example.periodcycle.database.SharedPreferences
 import com.example.periodcycle.database.SharedPreferences2
 import com.example.periodcycle.database.UserHistory
+import com.example.periodcycle.database.UserHistoryDao
 import com.example.periodcycle.database.UserHistoryDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,16 +85,16 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun saveUserOnce(context: Context) {
         if (!SharedPreferences.isUserSaved(context)) {
             viewModelScope.launch {
-                haveSaveUser(1, "user", 7, 30)  // Call suspend function within a coroutine
+                saveUser(1, "user", 7, 30)  // Call suspend function within a coroutine
             }
             SharedPreferences.setUserSaved(context, true)
         }
     }
 
-    suspend fun haveSaveUser(id: Int, name: String, cycle: Int, period: Int) {
-        val user = UserData(UserId = id, name = name, averageCycle = cycle, averagePeriod = period)
-        dao.addAUser(user)
-    }
+//    suspend fun haveSaveUser(id: Int, name: String, cycle: Int, period: Int) {
+//        val user = UserData(UserId = id, name = name, averageCycle = cycle, averagePeriod = period)
+//        dao.addAUser(user)
+//    }
 }
 
 class UserHistoryViewModel(application: Application) : AndroidViewModel(application) {
@@ -108,6 +108,8 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
             dao.addAUserHistory(UserHistory(weight = weight, mood = mood, water = water, date = LocalDate.now()))
         }
     }
+
+
 
 
     private val _userHistory = MutableStateFlow<UserHistory?>(null)
@@ -157,7 +159,8 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
             Log.d("SAVE_CHECK", "Saving user history...")
             viewModelScope.launch {
                 try {
-                    haveSaveUser(50, "Happy", 3)
+//                    haveSaveUser(50, "Happy", 3)
+                    saveInfo(50,"happy",3)
                     Log.d("SAVE_CHECK", "Data saved successfully!")
                     SharedPreferences2.setUserSaved(context, true)
                 } catch (e: Exception) {
@@ -168,12 +171,11 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
             Log.d("SAVE_CHECK", "User already saved.")
         }
     }
-
-    suspend fun haveSaveUser(weight: Int, mood: String, water: Int) {
-        val user = UserHistory(weight = weight, mood = mood, water=water, date = LocalDate.now())
-        dao.addAUserHistory(user)
-        _userHistory.value = user
-        Log.d("SAVE_CHECK", "User inserted: $user")
-    }
+//check by add yesterday date
+//    suspend fun haveSaveUser(weight: Int, mood: String, water: Int) {
+//        val user = UserHistory(weight = weight, mood = mood, water=water, date = LocalDate.now().minusDays(1))
+//        dao.addAUserHistory(user)
+//        _userHistory.value = user
+//        Log.d("SAVE_CHECK", "User inserted: $user")
+//    }
 }
-

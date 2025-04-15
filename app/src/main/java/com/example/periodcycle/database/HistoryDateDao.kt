@@ -58,7 +58,7 @@ interface UserHistoryDao {
     @Insert
     suspend fun addAUserHistory(UserHistoryEntity: UserHistory)
 
-    @Query("Select * from `user-history-table` ORDER BY date DESC")
+    @Query("Select * from `user-history-table` ORDER BY id ASC")
     fun getAllUserHistory(): Flow<List<UserHistory>>
 
     @Query("DELETE FROM 'user-history-table' WHERE id = :id")

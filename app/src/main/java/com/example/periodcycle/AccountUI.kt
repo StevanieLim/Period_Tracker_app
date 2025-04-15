@@ -1,5 +1,6 @@
 package com.example.periodcycle
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.periodcycle.database.UserData
 import com.example.periodcycle.database.UserHistory
+import java.time.LocalDate
 
 
 //prepopulate and is if is empty is weird
@@ -71,9 +73,7 @@ import com.example.periodcycle.database.UserHistory
 fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
     var water by remember { mutableIntStateOf(0) }
     var showDialog by remember { mutableIntStateOf(0) }
-    var selectedWeight by remember { mutableStateOf(50) }
     var selectedUnit by remember { mutableStateOf("kg") }
-    var selectedMood by remember { mutableStateOf("Happy") }
     val keyboardController = LocalSoftwareKeyboardController.current
     val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val users by viewModel.allUser.collectAsState(initial = emptyList())
@@ -82,15 +82,17 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
 
     LaunchedEffect(Unit) {
         viewModel.saveUserOnce(context)
-        viewModel2.saveUserHistoryOnce(context)
         viewModel2.getUserHistory()
+        viewModel2.saveUserHistoryOnce(context)
     }
 
     val currentuserInfo by viewModel2.userHistory.collectAsState()
 
-    if (users.isEmpty()) {
+    if (users.isEmpty()||usersinfo.isEmpty()) {
         Text(text = "no user yet")
     } else {
+        usersinfo.last().let {
+            if (it.date != LocalDate.now()) viewModel2.saveInfo(it.weight, it.mood, it.water) }
         LazyColumn {
             item {
                 Box( //Darker skin color background
@@ -108,6 +110,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                         if (usersinfo.isEmpty()) {
                             androidx.compose.material3.Text("No cycles recorded yet.")
                         } else {
+                            Log.d("DEBUG", "in userinfo there are ${usersinfo.size} ")
                             usersinfo.forEach { info ->
                                 Text(text = info.id.toString())
                                 Text(text = info.date.toString())
@@ -430,10 +433,13 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                     )
-                                    WaterRating(
-                                        water = water,
-                                        onWaterChange = { newRating -> water = newRating }
-                                    )
+                                    currentuserInfo?.let {
+                                        WaterRating(
+                                            onWaterChange = { newRating -> water = newRating },
+                                            userInfo = it,
+                                            viewModel = viewModel2
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -452,9 +458,6 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                         DialogMoodBox(
                             show = showDialog,
                             onDismiss = { showDialog = 0 },
-                            selectedMood = selectedMood,
-                            onMoodChange = { selectedMood = it },
-                            userInfo = it,
                             viewModel = viewModel2
                         )
                     }
@@ -481,8 +484,9 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
 
 @Composable
 fun WaterRating(
-    water: Int,
-    onWaterChange: (Int) -> Unit // Callback to update the rating
+    onWaterChange: (Int) -> Unit, // Callback to update the rating,
+    viewModel: UserHistoryViewModel,
+    userInfo: UserHistory
 ) {
     val maxRating = 8 // Maximum number of stars
     Box(
@@ -504,11 +508,14 @@ fun WaterRating(
                 Image(
                     painter = painterResource(id = R.drawable.glass),
                     contentDescription = "Water $i",
-                    colorFilter = if (i > water) ColorFilter.tint(Color.Gray) else null,
+                    colorFilter = if (i > userInfo.water) ColorFilter.tint(Color.Gray) else null,
                     modifier = Modifier
                         .weight(0.1f)
                         .padding(2.dp)
-                        .clickable { onWaterChange(i) }
+                        .clickable {
+                            onWaterChange(i)
+                            viewModel.UpdataWater(i)
+                        }
                         .fillMaxWidth()
                 )
             }
@@ -617,10 +624,7 @@ fun DialogWeightBox(
 fun DialogMoodBox(
     show: Int,
     onDismiss: () -> Unit,
-    selectedMood: String,
-    onMoodChange: (String) -> Unit,
     viewModel: UserHistoryViewModel,
-    userInfo: UserHistory
 ) {
     if (show == 4) {
         Dialog(onDismissRequest = { onDismiss() }) {
@@ -654,7 +658,6 @@ fun DialogMoodBox(
                             ) { unit ->
                                 Button(
                                     onClick = {
-                                        onMoodChange(unit)
                                         selected = unit
                                               },
                                     colors = ButtonDefaults.buttonColors(

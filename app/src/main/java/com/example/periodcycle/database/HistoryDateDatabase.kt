@@ -62,8 +62,6 @@ abstract class UserDatabase : RoomDatabase() {
                         "user_db"
                     )
                         .fallbackToDestructiveMigration()
-//                        .createFromAsset("databaseData/userData1.db")
-//                        .addCallback(PrepopulateRoomCallback(context))
                         .build()
                     instance = DB_INSTANCE
                 }
@@ -75,7 +73,7 @@ abstract class UserDatabase : RoomDatabase() {
 
 @Database(
     entities = [UserHistory::class],
-    version = 7)
+    version = 1)
 @TypeConverters(LocalDateConverter::class)
 abstract class UserHistoryDatabase : RoomDatabase() {
     abstract fun userHistoryDao(): UserHistoryDao
