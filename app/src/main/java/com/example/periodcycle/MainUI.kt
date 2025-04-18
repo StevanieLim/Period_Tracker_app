@@ -19,10 +19,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.periodcycle.AccountUI
 import com.example.periodcycle.CalenderUI
-import com.example.periodcycle.HistoryDateViewModel
+import com.example.periodcycle.database.HistoryDateViewModel
 import com.example.periodcycle.HomePageUi
-import com.example.periodcycle.UserHistoryViewModel
-import com.example.periodcycle.UserViewModel
+import com.example.periodcycle.database.UserHistoryViewModel
+import com.example.periodcycle.database.UserViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
 

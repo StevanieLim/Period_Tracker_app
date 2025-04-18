@@ -51,6 +51,9 @@ interface UserDao {
 
     @Query("Update `user-table` SET averageCycle = :newCycle WHERE UserId = :id")
     suspend fun updateCycle(id: Int, newCycle :Int):Int
+
+    @Query("Update `user-table` SET profilePicture = :picture WHERE UserId = :id")
+    suspend fun updatePicture(id: Int, picture :String):Int
 }
 
 @Dao

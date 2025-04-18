@@ -1,5 +1,6 @@
 package com.example.periodcycle.database
 
+import android.graphics.Bitmap
 import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -37,7 +38,8 @@ data class UserData(
     @ColumnInfo (name = "name") val name: String,
     @ColumnInfo (name = "averagePeriod") val averagePeriod: Int,
     @ColumnInfo (name = "averageCycle")val averageCycle: Int,
-)
+    @ColumnInfo (name = "profilepicture")val profilePicture: String? = null,
+    )
 
 
 @Entity(tableName = "user-history-table")

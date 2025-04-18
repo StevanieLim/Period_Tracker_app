@@ -1,4 +1,4 @@
-package com.example.periodcycle
+package com.example.periodcycle.database
 import android.app.Application
 import android.content.Context
 import android.util.Log
@@ -79,6 +79,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun UpdataCycle(id: Int, newCycle: Int){
         viewModelScope.launch {
             dao.updateCycle(id = id, newCycle = newCycle)
+        }
+    }
+
+    fun UpdataPicture(id: Int, picture: String){
+        viewModelScope.launch {
+            dao.updatePicture(id = id, picture = picture)
         }
     }
 

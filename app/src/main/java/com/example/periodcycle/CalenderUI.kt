@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
@@ -46,18 +44,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.periodcycle.database.HistoryDate
+import com.example.periodcycle.database.HistoryDateViewModel
 import io.github.boguszpawlowski.composecalendar.Calendar
 import io.github.boguszpawlowski.composecalendar.day.DayState
 import io.github.boguszpawlowski.composecalendar.rememberCalendarState
-import io.github.boguszpawlowski.composecalendar.rememberSelectableCalendarState
 import io.github.boguszpawlowski.composecalendar.selection.EmptySelectionState
-import io.github.boguszpawlowski.composecalendar.selection.SelectionMode
-import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
-fun CalenderUI(viewModel: HistoryDateViewModel , cyclePeriod: Int){
+fun CalenderUI(viewModel: HistoryDateViewModel, cyclePeriod: Int){
     val dates by viewModel.allDates.collectAsState(initial = emptyList())
     var isPeriodDay by remember { mutableStateOf(false) }
     LazyColumn(
@@ -96,7 +92,7 @@ fun CalenderUI(viewModel: HistoryDateViewModel , cyclePeriod: Int){
 
 
 @Composable
-fun CustomCalendarView(viewModel: HistoryDateViewModel ,isPeriodDay : Boolean, cyclePeriod:Int) {
+fun CustomCalendarView(viewModel: HistoryDateViewModel, isPeriodDay : Boolean, cyclePeriod:Int) {
     var showDialog by remember { mutableStateOf(false) }
     val calendarState = rememberCalendarState()
     var seledtedDay by remember { mutableStateOf<DayState<EmptySelectionState>?>(null) }
@@ -189,7 +185,7 @@ fun CustomCalendarView(viewModel: HistoryDateViewModel ,isPeriodDay : Boolean, c
 }
 
 @Composable
-fun DialogBloodBox(viewModel: HistoryDateViewModel ,show : Boolean, onDismiss : () -> Unit,
+fun DialogBloodBox(viewModel: HistoryDateViewModel, show : Boolean, onDismiss : () -> Unit,
                    day : DayState<EmptySelectionState>?, cycle : Int){
     var rating by remember { mutableStateOf(0) }
     if (show) {

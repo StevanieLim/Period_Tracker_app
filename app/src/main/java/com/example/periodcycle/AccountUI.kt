@@ -1,6 +1,15 @@
 package com.example.periodcycle
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,7 +38,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -48,9 +63,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -63,21 +81,26 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.periodcycle.database.UserData
 import com.example.periodcycle.database.UserHistory
+import com.example.periodcycle.database.UserHistoryViewModel
+import com.example.periodcycle.database.UserViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 
 //prepopulate and is if is empty is weird
 
 
+@RequiresApi(Build.VERSION_CODES.P)
 @Composable
-fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
+fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
     var water by remember { mutableIntStateOf(0) }
     var showDialog by remember { mutableIntStateOf(0) }
     var selectedUnit by remember { mutableStateOf("kg") }
     val keyboardController = LocalSoftwareKeyboardController.current
     val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val users by viewModel.allUser.collectAsState(initial = emptyList())
-    val currentUser by remember { mutableIntStateOf(0)}
+    val currentUser by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -88,11 +111,12 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
 
     val currentuserInfo by viewModel2.userHistory.collectAsState()
 
-    if (users.isEmpty()||usersinfo.isEmpty()) {
+    if (users.isEmpty()) {
         Text(text = "no user yet")
     } else {
         usersinfo.last().let {
-            if (it.date != LocalDate.now()) viewModel2.saveInfo(it.weight, it.mood, it.water) }
+            if (it.date != LocalDate.now()) viewModel2.saveInfo(it.weight, it.mood, it.water)
+        }
         LazyColumn {
             item {
                 Box( //Darker skin color background
@@ -107,72 +131,63 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
-                        if (usersinfo.isEmpty()) {
-                            androidx.compose.material3.Text("No cycles recorded yet.")
-                        } else {
-                            Log.d("DEBUG", "in userinfo there are ${usersinfo.size} ")
-                            usersinfo.forEach { info ->
-                                Text(text = info.id.toString())
-                                Text(text = info.date.toString())
-                                Text(text = info.weight.toString())
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                        }
-                        
-                        Text(text = currentuserInfo.toString())
+//                        if (usersinfo.isEmpty()) {
+//                            androidx.compose.material3.Text("No cycles recorded yet.")
+//                        } else {
+//                            Log.d("DEBUG", "in userinfo there are ${usersinfo.size} ")
+//                            usersinfo.forEach { info ->
+//                                Text(text = info.id.toString())
+//                                Text(text = info.date.toString())
+//                                Text(text = info.weight.toString())
+//                                Spacer(modifier = Modifier.height(8.dp))
+//                            }
+//                        }
+//
+//                        Text(text = currentuserInfo.toString())
 
-                        Box(
+                        RequestContentPermission(viewModel = viewModel, user = users[currentUser])
+
+                        var username by remember { mutableStateOf(users[currentUser].name) }
+                        TextField(
+                            value = username,
+                            onValueChange = {
+                                username = it
+                            },
+                            textStyle = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.ExtraBold, // Make it stand out
+                                color = Color.White, // Text color
+                                textAlign = TextAlign.Center
+                            ),
                             modifier = Modifier
-                                .padding(top = 30.dp)
-                                .size(130.dp)
-                                .background(
-                                    color = Color.White, // Light blue color for the circle
-                                    shape = CircleShape // Make the Box a circle
-                                )
-                        )
-                            var username by remember { mutableStateOf(users[currentUser].name) }
-                            TextField(
-                                value = username,
-                                onValueChange = {
-                                    username = it
-                                },
-                                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.ExtraBold, // Make it stand out
-                                    color = Color.White, // Text color
-                                    textAlign = TextAlign.Center
-                                ),
-                                modifier = Modifier
-                                    .padding(top = 10.dp)
-                                    .align(Alignment.CenterHorizontally),
-                                singleLine = true, // If you want to ensure the text stays on one line,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color.Transparent,
-                                    unfocusedBorderColor = Color.Transparent,
-                                    focusedLabelColor = Color.Transparent,
-                                    unfocusedLabelColor = Color.Transparent,
-                                ),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Text, // Set the keyboard type
-                                    imeAction = ImeAction.Done // Set the action on the 'Enter' key
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = {
-                                        keyboardController?.hide()
-                                        viewModel.UpdateName(
-                                            users[currentUser].UserId,
-                                            username + ""
-                                        )
-                                    }
-                                )
+                                .align(Alignment.CenterHorizontally),
+                            singleLine = true, // If you want to ensure the text stays on one line,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedLabelColor = Color.Transparent,
+                                unfocusedLabelColor = Color.Transparent,
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text, // Set the keyboard type
+                                imeAction = ImeAction.Done // Set the action on the 'Enter' key
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    keyboardController?.hide()
+                                    viewModel.UpdateName(
+                                        users[currentUser].UserId,
+                                        username + ""
+                                    )
+                                }
                             )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        )
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier.fillMaxWidth()
                         ) { //Weight and Height
                             Box( //Weight
                                 modifier = Modifier
-                                    .height(100.dp)
+                                    .height(90.dp)
                                     .weight(1f)
                                     .background(
                                         color = Color(0xFFFFFAD7),
@@ -224,7 +239,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Box(//Moods
                                 modifier = Modifier
-                                    .height(100.dp)
+                                    .height(90.dp)
                                     .weight(1f)
                                     .background(
                                         color = Color(0xFFFFFAD7), // Light blue color for the circle
@@ -268,7 +283,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Box(//Cycle
                             modifier = Modifier
                                 .height(250.dp)
@@ -326,7 +341,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                                     ) {
                                         Column(modifier = Modifier.padding(8.dp)) {
                                             Text(
-                                                text =  "${users[currentUser].averagePeriod} Days",
+                                                text = "${users[currentUser].averagePeriod} Days",
                                                 style = MaterialTheme.typography.headlineSmall.copy(
                                                     fontWeight = FontWeight.ExtraBold,
                                                     color = Color(0xFFFFFAD7)
@@ -398,7 +413,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2 : UserHistoryViewModel) {
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Box(//water reminder
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -529,7 +544,7 @@ fun DialogWeightBox(
     onDismiss: () -> Unit,
     selectedUnit: String,
     onUnitChange: (String) -> Unit,
-    userInfo : UserHistory,
+    userInfo: UserHistory,
     viewModel: UserHistoryViewModel
 ) {
     if (show == 3) {
@@ -608,7 +623,7 @@ fun DialogWeightBox(
                         onClick = {
                             onDismiss()
                             viewModel.UpdataWeight(visibleWeight)
-                                  },
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")
@@ -653,13 +668,13 @@ fun DialogMoodBox(
                             items(
                                 listOf(
                                     "Happy", "Sad", "Exited", "Confuse", "Lazy", "Craving",
-                                    "Ice Cream"
+                                    "Sweets"
                                 )
                             ) { unit ->
                                 Button(
                                     onClick = {
                                         selected = unit
-                                              },
+                                    },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (selected == unit) Color(
                                             0xFFE97777
@@ -677,9 +692,10 @@ fun DialogMoodBox(
 
                     androidx.compose.material3.Text("Track moods to record your body!")
                     Button(
-                        onClick = { onDismiss()
-                                  viewModel.UpdataMood(selected)
-                                  },
+                        onClick = {
+                            onDismiss()
+                            viewModel.UpdataMood(selected)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")
@@ -694,7 +710,7 @@ fun DialogMoodBox(
 @Composable
 fun DialogCycleBox(
     viewModel: UserViewModel,
-    currentUser : Int,
+    currentUser: Int,
     show: Int,
     onDismiss: () -> Unit,
     user: List<UserData>
@@ -750,9 +766,12 @@ fun DialogCycleBox(
                     Button(
                         onClick = {
                             onDismiss()
-                            if (show == 1) viewModel.UpdataPeriod(user[currentUser].UserId,visibleDays)
-                            else viewModel.UpdataCycle(user[currentUser].UserId,visibleDays)
-                                  },
+                            if (show == 1) viewModel.UpdataPeriod(
+                                user[currentUser].UserId,
+                                visibleDays
+                            )
+                            else viewModel.UpdataCycle(user[currentUser].UserId, visibleDays)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
                     ) {
                         androidx.compose.material3.Text("Done!")
@@ -763,3 +782,67 @@ fun DialogCycleBox(
         }
     }
 }
+
+@RequiresApi(Build.VERSION_CODES.P)
+@Composable
+fun RequestContentPermission(
+    viewModel: UserViewModel,
+    user :UserData
+) {
+    var imageUriString by remember { mutableStateOf(user.profilePicture) }
+    val context = LocalContext.current
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            imageUriString = it.toString() // Update final source
+            viewModel.UpdataPicture(id = user.UserId, picture = imageUriString!!) // Save to backend
+        }
+    }
+    LaunchedEffect(imageUriString) {
+        imageUriString?.let { uriStr ->
+            val uri = Uri.parse(uriStr)
+            try {
+                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                bitmap.value = ImageDecoder.decodeBitmap(source)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .padding(top = 10.dp)
+            .size(120.dp)
+            .clip(CircleShape)
+            .background(Color.White)
+            .clickable {
+                launcher.launch(arrayOf("image/*"))
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (bitmap.value != null) {
+            Image(
+                bitmap = bitmap.value!!.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.AddCircle,
+                contentDescription = "Add Photo",
+                tint = Color.Gray,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+
+    }
+}
+
