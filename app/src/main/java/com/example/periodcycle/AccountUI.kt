@@ -94,11 +94,9 @@ import java.time.LocalDate
 @RequiresApi(Build.VERSION_CODES.P)
 @Composable
 fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
-    var water by remember { mutableIntStateOf(0) }
     var showDialog by remember { mutableIntStateOf(0) }
     var selectedUnit by remember { mutableStateOf("kg") }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val users by viewModel.allUser.collectAsState(initial = emptyList())
     val currentUser by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
@@ -109,13 +107,15 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
         viewModel2.saveUserHistoryOnce(context)
     }
 
+    val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val currentuserInfo by viewModel2.userHistory.collectAsState()
 
-    if (users.isEmpty()) {
+    if (users.isEmpty() && usersinfo.isEmpty()) {
         Text(text = "no user yet")
     } else {
-        usersinfo.last().let {
-            if (it.date != LocalDate.now()) viewModel2.saveInfo(it.weight, it.mood, it.water)
+        usersinfo.lastOrNull()?.let {
+            if (it.date != LocalDate.now())
+                viewModel2.saveInfo(it.weight, it.mood, it.water)
         }
         LazyColumn {
             item {
@@ -422,6 +422,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
                                     color = Color(0xFFFFFAD7),
                                     shape = RoundedCornerShape(40.dp)
                                 )
+                                .clickable { showDialog = 5 }
                         ) {
                             Row(
                                 modifier = Modifier
@@ -448,31 +449,42 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                     )
-                                    currentuserInfo?.let {
-                                        WaterRating(
-                                            onWaterChange = { newRating -> water = newRating },
-                                            userInfo = it,
-                                            viewModel = viewModel2
-                                        )
+                                    Row {
+                                        val maxRating = 8
+                                        for (i in 1..maxRating) {
+                                            Image(
+                                                painter = painterResource(id = R.drawable.glass),
+                                                contentDescription = "Water $i",
+                                                colorFilter = if (i > (currentuserInfo?.water ?: 0)) ColorFilter.tint(Color.Gray) else null,
+                                                modifier = Modifier
+                                                    .weight(0.1f)
+                                                    .padding(2.dp)
+                                                    .fillMaxWidth()
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                     currentuserInfo?.let {
+                        DialogMoodBox(
+                            show = showDialog,
+                            onDismiss = { showDialog = 0 },
+                            viewModel = viewModel2
+                        )
+                        DialogWaterRating(
+                            show = showDialog,
+                            onDismiss = { showDialog = 0},
+                            currentuserInfo = it,
+                            viewModel2 = viewModel2
+                        )
                         DialogWeightBox(
                             show = showDialog,
                             onDismiss = { showDialog = 0 },
                             selectedUnit = selectedUnit,
                             onUnitChange = { selectedUnit = it },
                             userInfo = it,
-                            viewModel = viewModel2
-                        )
-                    }
-                    currentuserInfo?.let {
-                        DialogMoodBox(
-                            show = showDialog,
-                            onDismiss = { showDialog = 0 },
                             viewModel = viewModel2
                         )
                     }
@@ -498,38 +510,74 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
 }
 
 @Composable
+fun DialogWaterRating(
+    show: Int,
+    onDismiss: () -> Unit,
+    currentuserInfo : UserHistory,
+    viewModel2: UserHistoryViewModel
+){
+    if (show == 5) {
+        var waterNumber by remember { mutableIntStateOf(currentuserInfo.water) }
+            Dialog(onDismissRequest = { onDismiss() }) {
+            Surface(
+                modifier = Modifier.wrapContentSize(),
+                shape = MaterialTheme.shapes.small,
+                color = Color(0xFFFFD495)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "Drink Enough Water Today?",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    currentuserInfo?.let {
+                        WaterRating(
+                            onWaterSelected = { waterNumber = it },
+                            water = waterNumber
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            viewModel2.UpdataWater(waterNumber)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE97777))
+                    ) {
+                        androidx.compose.material3.Text("Done!")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun WaterRating(
-    onWaterChange: (Int) -> Unit, // Callback to update the rating,
-    viewModel: UserHistoryViewModel,
-    userInfo: UserHistory
+    onWaterSelected: (Int) -> Unit,
+    water : Int
 ) {
     val maxRating = 8 // Maximum number of stars
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectDragGestures { change, _ ->
-                    val newWater = (change.position.x / size.width) * maxRating
-                    onWaterChange(
-                        newWater
-                            .coerceIn(0f, maxRating.toFloat())
-                            .toInt()
-                    )
-                }
-            }
     ) {
         Row {
             for (i in 1..maxRating) {
                 Image(
                     painter = painterResource(id = R.drawable.glass),
                     contentDescription = "Water $i",
-                    colorFilter = if (i > userInfo.water) ColorFilter.tint(Color.Gray) else null,
+                    colorFilter = if (i > water) ColorFilter.tint(Color.Gray) else null,
                     modifier = Modifier
                         .weight(0.1f)
                         .padding(2.dp)
                         .clickable {
-                            onWaterChange(i)
-                            viewModel.UpdataWater(i)
+                            onWaterSelected(i)
                         }
                         .fillMaxWidth()
                 )
