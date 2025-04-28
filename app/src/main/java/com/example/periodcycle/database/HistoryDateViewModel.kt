@@ -109,14 +109,11 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
 
     val allUserHistory: Flow<List<UserHistory>>  = dao.getAllUserHistory()
 
-    fun saveInfo(weight: Int, mood: String, water : Int) {
+    fun saveInfo(weight: Int, mood: String, water : Int, bloodFlow : Int) {
         viewModelScope.launch {
-            dao.addAUserHistory(UserHistory(weight = weight, mood = mood, water = water, date = LocalDate.now()))
+            dao.addAUserHistory(UserHistory(weight = weight, mood = mood, water = water, bloodFlow = bloodFlow, date = LocalDate.now()))
         }
     }
-
-
-
 
     private val _userHistory = MutableStateFlow<UserHistory?>(null)
     val userHistory: StateFlow<UserHistory?> = _userHistory.asStateFlow()
@@ -128,7 +125,6 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
-
 
     fun GetUserHistory(){
         viewModelScope.launch {
@@ -154,6 +150,12 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun UpdataBloodFlow(newBloodFlow: Int){
+        viewModelScope.launch {
+            dao.updateBloodFlow(date = LocalDate.now(), newBloodFlow = newBloodFlow)
+        }
+    }
+
     fun deleteDate(id : Long) {
         viewModelScope.launch {
             dao.deleteById(id = id)
@@ -166,7 +168,7 @@ class UserHistoryViewModel(application: Application) : AndroidViewModel(applicat
             viewModelScope.launch {
                 try {
 //                    haveSaveUser(50, "Happy", 3)
-                    saveInfo(50,"happy",3)
+                    saveInfo(50,"happy",0,0)
                     Log.d("SAVE_CHECK", "Data saved successfully!")
                     SharedPreferences2.setUserSaved(context, true)
                 } catch (e: Exception) {

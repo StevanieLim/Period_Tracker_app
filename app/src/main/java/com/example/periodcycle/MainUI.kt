@@ -1,3 +1,5 @@
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.BottomNavigationItem
@@ -26,6 +28,7 @@ import com.example.periodcycle.database.UserViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
+@RequiresApi(Build.VERSION_CODES.P)
 @Composable
 fun PeriodTrackerApp(
     navController: NavHostController = rememberNavController()
@@ -43,9 +46,10 @@ fun PeriodTrackerApp(
             lerpColor(morningColors[1], nightColors[1], progress)
         )
     )
-    //AccountUI variable
-    var selectedCyclePeriod by remember { mutableIntStateOf(7) }
-    var selectedCycleRemain by remember { mutableIntStateOf(30) }
+
+    //Current User
+    val currentUser by remember { mutableIntStateOf(0) }
+
 
     // Update progress every minute
     LaunchedEffect(Unit) {
@@ -91,15 +95,7 @@ fun PeriodTrackerApp(
                         )
                     }
                 }
-            },
-            floatingActionButton = {
-                if (currentRoute == "Calendar") {
-                    FloatingActionButton(
-                        onClick = {},
-                        containerColor = Color(0xFFE97777)){
-                        Text("X")
-                    }
-                }}
+            }
         )
         {padding->
             Box(
@@ -114,8 +110,8 @@ fun PeriodTrackerApp(
                 modifier = Modifier.padding(padding)
             ) {
                 composable("Home") { HomePageUi() }
-                composable("Calendar") { CalenderUI(viewModelHistory,selectedCyclePeriod) }
-                composable("Me") { AccountUI(viewModel = viewModelUser, viewModel2 = viewModelUserHistory) }
+                composable("Calendar") { CalenderUI(viewModel = viewModelHistory, viewModelUser = viewModelUser, viewModelUserHistory = viewModelUserHistory ,currentUser = currentUser) }
+                composable("Me") { AccountUI(viewModel = viewModelUser, viewModel2 = viewModelUserHistory, currentUser = currentUser) }
             }
         }
     }

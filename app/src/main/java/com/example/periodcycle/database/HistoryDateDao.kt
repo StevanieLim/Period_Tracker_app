@@ -79,4 +79,6 @@ interface UserHistoryDao {
     @Query("Update `user-history-table` SET water = :newWater WHERE date = :date")
     suspend fun updateWater(date: LocalDate, newWater :Int) :Int
 
+    @Query("Update `user-history-table` SET bloodFlow = :newBloodFlow WHERE date = :date")
+    suspend fun updateBloodFlow(date: LocalDate, newBloodFlow :Int) :Int
 }

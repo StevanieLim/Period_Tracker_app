@@ -93,12 +93,10 @@ import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.P)
 @Composable
-fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
+fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel, currentUser : Int) {
     var showDialog by remember { mutableIntStateOf(0) }
     var selectedUnit by remember { mutableStateOf("kg") }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val users by viewModel.allUser.collectAsState(initial = emptyList())
-    val currentUser by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -107,6 +105,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
         viewModel2.saveUserHistoryOnce(context)
     }
 
+    val users by viewModel.allUser.collectAsState(initial = emptyList())
     val usersinfo by viewModel2.allUserHistory.collectAsState(initial = emptyList())
     val currentuserInfo by viewModel2.userHistory.collectAsState()
 
@@ -115,7 +114,7 @@ fun AccountUI(viewModel: UserViewModel, viewModel2: UserHistoryViewModel) {
     } else {
         usersinfo.lastOrNull()?.let {
             if (it.date != LocalDate.now())
-                viewModel2.saveInfo(it.weight, it.mood, it.water)
+                viewModel2.saveInfo(it.weight, it.mood, 0,0)
         }
         LazyColumn {
             item {

@@ -50,4 +50,5 @@ data class UserHistory(
     @ColumnInfo(name = "mood") val mood: String,
     @ColumnInfo(name = "water") val water: Int,
     @ColumnInfo(name = "date") val date: LocalDate,
+    @ColumnInfo(name = "bloodFlow") val bloodFlow: Int,
     )
